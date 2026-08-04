@@ -1,10 +1,14 @@
--- A.C.Z PISTOL HUB (С АВТО-АИМОТОМ)
+-- A.C.Z PISTOL HUB (FINAL ESP + DEATH EFFECT)
 -- Delta Executor
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
 local camera = game.Workspace.CurrentCamera
+local tweenService = game:GetService("TweenService")
+
+-- ID ДЛЯ ESP
+local ESP_IMAGE_ID = "rbxassetid://10942997895"
 
 -- ГУИ
 local screenGui = Instance.new("ScreenGui")
@@ -14,8 +18,8 @@ screenGui.ResetOnSpawn = false
 
 -- ОКНО
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 160, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -80, 0.5, -100)
+mainFrame.Size = UDim2.new(0, 140, 0, 180)
+mainFrame.Position = UDim2.new(0.5, -70, 0.5, -90)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
@@ -28,7 +32,7 @@ corner.Parent = mainFrame
 
 -- ЗАГОЛОВОК
 local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 25)
+titleBar.Size = UDim2.new(1, 0, 0, 22)
 titleBar.BackgroundColor3 = Color3.fromRGB(80, 0, 120)
 titleBar.BackgroundTransparency = 0.3
 titleBar.BorderSizePixel = 0
@@ -44,19 +48,19 @@ title.Position = UDim2.new(0, 8, 0, 0)
 title.BackgroundTransparency = 1
 title.Text = "A.C.Z"
 title.TextColor3 = Color3.fromRGB(180, 100, 255)
-title.TextSize = 13
+title.TextSize = 12
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = titleBar
 
 -- КНОПКА ЗАКРЫТИЯ
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 18, 0, 18)
-closeBtn.Position = UDim2.new(1, -22, 0, 3.5)
+closeBtn.Size = UDim2.new(0, 16, 0, 16)
+closeBtn.Position = UDim2.new(1, -20, 0, 3)
 closeBtn.BackgroundColor3 = Color3.fromRGB(120, 0, 180)
 closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.TextSize = 11
+closeBtn.TextSize = 10
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.BorderSizePixel = 0
 closeBtn.Parent = titleBar
@@ -65,14 +69,14 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(1, 0)
 closeCorner.Parent = closeBtn
 
--- КНОПКА ОТКРЫТИЯ (С ПАУТИНОЙ 🕸️)
+-- КНОПКА ОТКРЫТИЯ
 local openBtn = Instance.new("TextButton")
-openBtn.Size = UDim2.new(0, 25, 0, 25)
-openBtn.Position = UDim2.new(1, -30, 0, 5)
+openBtn.Size = UDim2.new(0, 22, 0, 22)
+openBtn.Position = UDim2.new(1, -26, 0, 5)
 openBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 130)
 openBtn.Text = "🕸️"
 openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-openBtn.TextSize = 14
+openBtn.TextSize = 13
 openBtn.Font = Enum.Font.GothamBold
 openBtn.BorderSizePixel = 0
 openBtn.Parent = screenGui
@@ -126,19 +130,19 @@ end)
 
 -- КНОПКИ
 local btnContainer = Instance.new("Frame")
-btnContainer.Size = UDim2.new(1, -10, 1, -32)
-btnContainer.Position = UDim2.new(0, 5, 0, 30)
+btnContainer.Size = UDim2.new(1, -10, 1, -28)
+btnContainer.Position = UDim2.new(0, 5, 0, 26)
 btnContainer.BackgroundTransparency = 1
 btnContainer.Parent = mainFrame
 
 local function createButton(text, yPos, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 24)
+    btn.Size = UDim2.new(1, 0, 0, 22)
     btn.Position = UDim2.new(0, 0, 0, yPos)
     btn.BackgroundColor3 = Color3.fromRGB(55, 0, 95)
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(210, 170, 255)
-    btn.TextSize = 12
+    btn.TextSize = 11
     btn.Font = Enum.Font.GothamBold
     btn.BorderSizePixel = 0
     btn.Parent = btnContainer
@@ -157,110 +161,219 @@ local function createButton(text, yPos, callback)
     return btn
 end
 
--- ESP
+-- ============ ESP С КРУТЯЩИМСЯ ИЗОБРАЖЕНИЕМ ============
 local espEnabled = false
 local espObjects = {}
 
-local function clearESP()
-    for _, obj in pairs(espObjects) do
-        pcall(function() obj:Destroy() end)
-    end
-    espObjects = {}
+local function createESPForPlayer(targetChar)
+    local head = targetChar:FindFirstChild("Head")
+    if not head then return end
+    
+    local plr = game.Players:GetPlayerFromCharacter(targetChar)
+    if not plr or plr == player then return end
+    
+    -- Биллборд
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESP_Image"
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 55, 0, 55)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = head
+    
+    -- Изображение (крутящееся)
+    local image = Instance.new("ImageLabel")
+    image.Size = UDim2.new(1, 0, 1, 0)
+    image.BackgroundTransparency = 1
+    image.Image = ESP_IMAGE_ID
+    image.ImageColor3 = Color3.fromRGB(180, 50, 255)
+    image.Parent = billboard
+    
+    -- Имя игрока
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0, 14)
+    nameLabel.Position = UDim2.new(0, 0, 1, 2)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = plr.Name
+    nameLabel.TextColor3 = Color3.fromRGB(255, 50, 100)
+    nameLabel.TextSize = 11
+    nameLabel.Font = Enum.Font.Bodoni
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextStrokeColor3 = Color3.fromRGB(100, 0, 50)
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+    nameLabel.Parent = billboard
+    
+    -- Дистанция
+    local distLabel = Instance.new("TextLabel")
+    distLabel.Size = UDim2.new(1, 0, 0, 12)
+    distLabel.Position = UDim2.new(0, 0, 1, 16)
+    distLabel.BackgroundTransparency = 1
+    distLabel.Text = "0s"
+    distLabel.TextColor3 = Color3.fromRGB(200, 50, 150)
+    distLabel.TextSize = 10
+    distLabel.Font = Enum.Font.Bodoni
+    distLabel.TextStrokeTransparency = 0
+    distLabel.TextStrokeColor3 = Color3.fromRGB(50, 0, 50)
+    distLabel.TextXAlignment = Enum.TextXAlignment.Center
+    distLabel.Parent = billboard
+    
+    local data = {
+        billboard = billboard,
+        image = image,
+        nameLabel = nameLabel,
+        distLabel = distLabel,
+        plr = plr,
+        head = head,
+        angle = 0
+    }
+    
+    table.insert(espObjects, data)
+    return data
 end
 
+-- ============ ВИЗУАЛ СМЕРТИ ============
+local deathVisualEnabled = true
+
+local function createDeathEffect(position)
+    -- Сфера
+    local sphere = Instance.new("Part")
+    sphere.Name = "DeathSphere"
+    sphere.Size = Vector3.new(1, 1, 1)
+    sphere.Position = position + Vector3.new(0, 1, 0)
+    sphere.Anchored = true
+    sphere.CanCollide = false
+    sphere.BrickColor = BrickColor.new("Bright purple")
+    sphere.Material = Enum.Material.Neon
+    sphere.Transparency = 0.3
+    sphere.Shape = Enum.PartType.Ball
+    sphere.Parent = game.Workspace
+    
+    -- Круг на земле
+    local circle = Instance.new("Part")
+    circle.Name = "DeathCircle"
+    circle.Size = Vector3.new(0.5, 0.1, 0.5)
+    circle.Position = position + Vector3.new(0, 0.1, 0)
+    circle.Anchored = true
+    circle.CanCollide = false
+    circle.BrickColor = BrickColor.new("Bright purple")
+    circle.Material = Enum.Material.Neon
+    circle.Transparency = 0.2
+    circle.Parent = game.Workspace
+    
+    local mesh = Instance.new("CylinderMesh")
+    mesh.Parent = circle
+    
+    -- Анимация сферы
+    local sphereTween = tweenService:Create(sphere, TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = Vector3.new(8, 8, 8),
+        Transparency = 1
+    })
+    sphereTween:Play()
+    
+    -- Анимация круга
+    local circleTween = tweenService:Create(circle, TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = Vector3.new(20, 0.1, 20),
+        Transparency = 1
+    })
+    circleTween:Play()
+    
+    task.wait(3.5)
+    sphere:Destroy()
+    circle:Destroy()
+end
+
+-- Отслеживание смерти ДРУГИХ игроков
+local function setupDeathDetection()
+    for _, plr in pairs(game.Players:GetPlayers()) do
+        if plr ~= player then
+            plr.CharacterAdded:Connect(function(char)
+                local humanoid = char:WaitForChild("Humanoid", 10)
+                if humanoid then
+                    humanoid.Died:Connect(function()
+                        if deathVisualEnabled then
+                            local hrp = char:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                createDeathEffect(hrp.Position)
+                            end
+                        end
+                    end)
+                end
+            end)
+        end
+    end
+end
+
+-- ============ ОБНОВЛЕНИЕ ESP ============
 local function updateESP()
-    clearESP()
+    -- Удаляем старый ESP
+    for _, data in pairs(espObjects) do
+        pcall(function() 
+            if data.billboard then data.billboard:Destroy() end
+        end)
+    end
+    espObjects = {}
+    
     if not espEnabled then return end
     if not player.Character then return end
     
     local hrp = player.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-
+    
     for _, plr in pairs(game.Players:GetPlayers()) do
         if plr ~= player and plr.Character then
             local char = plr.Character
-            local targetHrp = char:FindFirstChild("HumanoidRootPart")
             local head = char:FindFirstChild("Head")
-            if targetHrp and head then
+            local targetHrp = char:FindFirstChild("HumanoidRootPart")
+            
+            if head and targetHrp then
                 local pos = targetHrp.Position
                 local screenPos, onScreen = camera:WorldToViewportPoint(pos)
                 
                 if onScreen then
                     local dist = (hrp.Position - pos).Magnitude
+                    local espData = createESPForPlayer(char)
                     
-                    local top = Instance.new("Frame")
-                    top.Size = UDim2.new(0, 30, 0, 2)
-                    top.Position = UDim2.new(0, screenPos.X - 15, 0, screenPos.Y - 30)
-                    top.BackgroundColor3 = Color3.fromRGB(160, 50, 255)
-                    top.BorderSizePixel = 0
-                    top.Parent = screenGui
-                    table.insert(espObjects, top)
-                    
-                    local bottom = Instance.new("Frame")
-                    bottom.Size = UDim2.new(0, 30, 0, 2)
-                    bottom.Position = UDim2.new(0, screenPos.X - 15, 0, screenPos.Y + 30)
-                    bottom.BackgroundColor3 = Color3.fromRGB(160, 50, 255)
-                    bottom.BorderSizePixel = 0
-                    bottom.Parent = screenGui
-                    table.insert(espObjects, bottom)
-                    
-                    local left = Instance.new("Frame")
-                    left.Size = UDim2.new(0, 2, 0, 60)
-                    left.Position = UDim2.new(0, screenPos.X - 15, 0, screenPos.Y - 30)
-                    left.BackgroundColor3 = Color3.fromRGB(160, 50, 255)
-                    left.BorderSizePixel = 0
-                    left.Parent = screenGui
-                    table.insert(espObjects, left)
-                    
-                    local right = Instance.new("Frame")
-                    right.Size = UDim2.new(0, 2, 0, 60)
-                    right.Position = UDim2.new(0, screenPos.X + 13, 0, screenPos.Y - 30)
-                    right.BackgroundColor3 = Color3.fromRGB(160, 50, 255)
-                    right.BorderSizePixel = 0
-                    right.Parent = screenGui
-                    table.insert(espObjects, right)
-                    
-                    local nameText = Instance.new("TextLabel")
-                    nameText.Size = UDim2.new(0, 80, 0, 14)
-                    nameText.Position = UDim2.new(0, screenPos.X - 40, 0, screenPos.Y - 45)
-                    nameText.BackgroundTransparency = 1
-                    nameText.Text = plr.Name
-                    nameText.TextColor3 = Color3.fromRGB(180, 100, 255)
-                    nameText.TextSize = 10
-                    nameText.Font = Enum.Font.GothamBold
-                    nameText.TextStrokeTransparency = 0.5
-                    nameText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                    nameText.Parent = screenGui
-                    table.insert(espObjects, nameText)
-                    
-                    local distText = Instance.new("TextLabel")
-                    distText.Size = UDim2.new(0, 50, 0, 14)
-                    distText.Position = UDim2.new(0, screenPos.X - 25, 0, screenPos.Y + 35)
-                    distText.BackgroundTransparency = 1
-                    distText.Text = tostring(math.floor(dist)) .. "s"
-                    distText.TextColor3 = Color3.fromRGB(200, 130, 255)
-                    distText.TextSize = 10
-                    distText.Font = Enum.Font.GothamBold
-                    distText.TextStrokeTransparency = 0.5
-                    distText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                    distText.Parent = screenGui
-                    table.insert(espObjects, distText)
+                    if espData and espData.distLabel then
+                        espData.distLabel.Text = math.floor(dist) .. "s"
+                    end
                 end
             end
         end
     end
 end
 
+-- Вращение изображений
+runService.RenderStepped:Connect(function()
+    for _, data in pairs(espObjects) do
+        if data.image and data.image.Parent then
+            data.angle = (data.angle or 0) + 2
+            data.image.Rotation = data.angle
+        end
+    end
+end)
+
+-- ============ КНОПКИ ============
 createButton("ESP", 2, function(state)
     espEnabled = state
-    if not state then clearESP() end
+    if not state then
+        for _, data in pairs(espObjects) do
+            pcall(function() 
+                if data.billboard then data.billboard:Destroy() end
+            end)
+        end
+        espObjects = {}
+    end
+end)
+
+createButton("DeathFX", 26, function(state)
+    deathVisualEnabled = state
 end)
 
 -- FLY
 local flyEnabled = false
 local flyConnection = nil
 
-createButton("Fly", 28, function(state)
+createButton("Fly", 50, function(state)
     flyEnabled = state
     if state then
         local hrp = player.Character:FindFirstChild("HumanoidRootPart")
@@ -283,8 +396,8 @@ createButton("Fly", 28, function(state)
     end
 end)
 
--- AFK (DODGE)
-createButton("Dodge", 54, function(state)
+-- DODGE
+createButton("Dodge", 74, function(state)
     if state and player.Character then
         local hrp = player.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
@@ -293,16 +406,14 @@ createButton("Dodge", 54, function(state)
     end
 end)
 
--- AIMBOT (РУЧНОЙ)
+-- AIMBOT
 local aimbotEnabled = false
 
-createButton("Aim", 80, function(state)
+createButton("Aim", 98, function(state)
     aimbotEnabled = state
 end)
 
--- АВТО-АИМОТ (КОГДА СМОТРЯТ НА ТЕБЯ)
-local autoAimEnabled = true -- ВСЕГДА ВКЛЮЧЕН
-
+-- АВТО-АИМ
 runService.Heartbeat:Connect(function()
     if not player.Character then return end
     local hrp = player.Character:FindFirstChild("HumanoidRootPart")
@@ -310,9 +421,7 @@ runService.Heartbeat:Connect(function()
     
     local target = nil
     local targetDist = math.huge
-    local isLookedAt = false
     
-    -- Ищем кто смотрит на нас
     for _, plr in pairs(game.Players:GetPlayers()) do
         if plr ~= player and plr.Character and plr.Character:FindFirstChild("Head") then
             local head = plr.Character.Head
@@ -320,9 +429,7 @@ runService.Heartbeat:Connect(function()
             local lookDir = head.CFrame.LookVector
             local dotProduct = toPlayer:Dot(lookDir)
             
-            -- Если смотрит на нас (dot > 0.3)
             if dotProduct > 0.3 then
-                isLookedAt = true
                 local dist = (hrp.Position - head.Position).Magnitude
                 if dist < targetDist then
                     targetDist = dist
@@ -332,12 +439,10 @@ runService.Heartbeat:Connect(function()
         end
     end
     
-    -- Если на нас смотрят - наводимся на обидчика (даже если аимбот выключен)
-    if isLookedAt and target then
+    if target then
         camera.CFrame = CFrame.new(camera.CFrame.Position, target.Position)
     end
     
-    -- Обычный аимбот (если включен)
     if aimbotEnabled then
         local bestTarget = nil
         local bestDist = math.huge
@@ -367,12 +472,22 @@ sound.Looped = true
 sound.Parent = game.Workspace
 pcall(function() sound:Play() end)
 
--- ESP UPDATE
+-- ============ ЗАПУСК ============
 runService.Heartbeat:Connect(updateESP)
+
+task.spawn(function()
+    wait(1)
+    setupDeathDetection()
+end)
 
 -- ОЧИСТКА
 player.CharacterAdded:Connect(function()
-    clearESP()
+    for _, data in pairs(espObjects) do
+        pcall(function() 
+            if data.billboard then data.billboard:Destroy() end
+        end)
+    end
+    espObjects = {}
     if flyConnection then
         flyConnection:Disconnect()
         flyConnection = nil
@@ -380,4 +495,6 @@ player.CharacterAdded:Connect(function()
 end)
 
 print("✦ A.C.Z PISTOL HUB LOADED!")
-print("✦ AUTO-AIM: ВКЛЮЧЕН (когда смотрят на тебя)")
+print("✦ ESP: КРУТЯЩЕЕСЯ ИЗОБРАЖЕНИЕ (10942997895)")
+print("✦ С ИМЕНЕМ И ДИСТАНЦИЕЙ")
+print("✦ DEATH FX: СФЕРА + КРУГ НА ЗЕМЛЕ")
